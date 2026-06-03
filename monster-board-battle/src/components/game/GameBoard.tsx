@@ -1,5 +1,6 @@
 import { BOARD_SIZE, P1_BASE, P2_BASE } from "@/lib/game/constants";
 import { getMonsterAt } from "@/lib/game/monsters";
+import { isValidSpawnTileForPlayer } from "@/lib/game/spawn";
 import { getMovementDistance } from "@/lib/game/movement";
 import { isAdjacent } from "@/lib/game/combat";
 import type { MonsterInstance, PlayerId } from "@/lib/game/types";
@@ -31,10 +32,7 @@ export function GameBoard({
       return false;
     }
 
-    const base = currentPlayer === "p1" ? P1_BASE : P2_BASE;
-    const monsterAtTile = getMonsterAt(monsters, x, y);
-
-    return base.x === x && base.y === y && !monsterAtTile;
+    return isValidSpawnTileForPlayer(monsters, currentPlayer, x, y);
   }
 
   function isValidMoveTile(x: number, y: number) {

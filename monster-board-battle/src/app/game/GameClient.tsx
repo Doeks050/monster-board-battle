@@ -5,10 +5,11 @@ import { AttackPreviewModal } from "@/components/game/AttackPreviewModal";
 import { GameBoard } from "@/components/game/GameBoard";
 import { GameSidebar } from "@/components/game/GameSidebar";
 import { PlayerHand } from "@/components/game/PlayerHand";
-import { BASE_MAX_HP, P1_BASE, P2_BASE } from "@/lib/game/constants";
+import { BASE_MAX_HP } from "@/lib/game/constants";
 import { createStarterDeck, drawCards } from "@/lib/game/cards";
 import { calculateDamage, isAdjacent } from "@/lib/game/combat";
 import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
+import { isValidSpawnTileForPlayer } from "@/lib/game/spawn";
 import { getMovementDistance } from "@/lib/game/movement";
 import { getEffectiveMonsterStats, getPlayerMovementBonus } from "@/lib/game/stats";
 import type {
@@ -355,11 +356,14 @@ export function GameClient() {
       return;
     }
 
-    const base = currentPlayer === "p1" ? P1_BASE : P2_BASE;
-    const isOwnBase = base.x === x && base.y === y;
-    const occupied = getMonsterAt(monsters, x, y);
+    const isValidSpawnTile = isValidSpawnTileForPlayer(
+      monsters,
+      currentPlayer,
+      x,
+      y
+    );
 
-    if (!isOwnBase || occupied) {
+    if (!isValidSpawnTile) {
       return;
     }
 
