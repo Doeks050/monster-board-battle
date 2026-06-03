@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AttackPreviewModal } from "@/components/game/AttackPreviewModal";
 import { GameBoard } from "@/components/game/GameBoard";
 import { GameSidebar } from "@/components/game/GameSidebar";
 import { PlayerHand } from "@/components/game/PlayerHand";
@@ -53,6 +54,11 @@ const INITIAL_MONSTERS: MonsterInstance[] = [
   },
 ];
 
+type PendingAttack = {
+  attackerId: string;
+  defenderId: string;
+};
+
 function createInitialPlayerState(id: PlayerId): PlayerState {
   const deck = createStarterDeck();
   const drawn = drawCards(deck, [], 5);
@@ -88,6 +94,10 @@ export function GameClient() {
   const [movementPointsLeft, setMovementPointsLeft] = useState<number | null>(
     null
   );
+  const [pendingAttack, setPendingAttack] = useState<PendingAttack | null>(
+    null
+  );
+  const [attackedMonsterIds, setAttackedMonsterIds] = useState<string[]>([]);
 
   const [p1State, setP1State] = useState<PlayerState>(() =>
     createInitialPlayerState("p1")
@@ -104,6 +114,18 @@ export function GameClient() {
     selectedHandIndex === null ? null : activePlayerState.hand[selectedHandIndex];
 
   const hasSelectedMonsterCard = selectedCard?.type === "monster";
+
+  const pendingAttacker =
+    pendingAttack === null
+      ? null
+      : monsters.find((monster) => monster.instanceId === pendingAttack.attackerId) ??
+        null;
+
+  const pendingDefender =
+    pendingAttack === null
+      ? null
+      : monsters.find((monster) => monster.instanceId === pendingAttack.defenderId) ??
+        null;
 
   function setActivePlayerState(nextState: PlayerState) {
     if (currentPlayer === "p1") {
@@ -132,6 +154,8 @@ export function GameClient() {
     setSelectedMonster(null);
     setDiceRoll(null);
     setMovementPointsLeft(null);
+    setPendingAttack(null);
+    setAttackedMonsterIds([]);
 
     if (currentPlayer === "p1") {
       setCurrentPlayer("p2");
@@ -149,11 +173,13 @@ export function GameClient() {
       currentIndex === index ? null : index
     );
     setSelectedMonster(null);
+    setPendingAttack(null);
   }
 
   function selectMonster(monster: MonsterInstance) {
     setSelectedMonster(monster);
     setSelectedHandIndex(null);
+    setPendingAttack(null);
   }
 
   function rollDice() {
@@ -167,12 +193,16 @@ export function GameClient() {
     setMovementPointsLeft(roll);
   }
 
-  function attackTarget(x: number, y: number) {
+  function openAttackPreview(x: number, y: number) {
     if (!selectedMonster) {
       return false;
     }
 
     if (selectedMonster.owner !== currentPlayer) {
+      return false;
+    }
+
+    if (attackedMonsterIds.includes(selectedMonster.instanceId)) {
       return false;
     }
 
@@ -186,45 +216,67 @@ export function GameClient() {
       return false;
     }
 
-    const attackerCard = getMonsterCard(selectedMonster.cardId);
-    const defenderCard = getMonsterCard(target.cardId);
+    setPendingAttack({
+      attackerId: selectedMonster.instanceId,
+      defenderId: target.instanceId,
+    });
+
+    return true;
+  }
+
+  function confirmAttack() {
+    if (!pendingAttacker || !pendingDefender) {
+      setPendingAttack(null);
+      return;
+    }
+
+    if (attackedMonsterIds.includes(pendingAttacker.instanceId)) {
+      setPendingAttack(null);
+      return;
+    }
+
+    const attackerCard = getMonsterCard(pendingAttacker.cardId);
+    const defenderCard = getMonsterCard(pendingDefender.cardId);
     const damage = calculateDamage(attackerCard.atk, defenderCard.def);
-    const nextHp = target.currentHp - damage;
+    const nextHp = pendingDefender.currentHp - damage;
 
     if (nextHp <= 0) {
       const movedAttacker: MonsterInstance = {
-        ...selectedMonster,
-        x: target.x,
-        y: target.y,
+        ...pendingAttacker,
+        x: pendingDefender.x,
+        y: pendingDefender.y,
       };
 
       setMonsters((currentMonsters) =>
         currentMonsters
-          .filter((monster) => monster.instanceId !== target.instanceId)
+          .filter((monster) => monster.instanceId !== pendingDefender.instanceId)
           .map((monster) =>
-            monster.instanceId === selectedMonster.instanceId
+            monster.instanceId === pendingAttacker.instanceId
               ? movedAttacker
               : monster
           )
       );
 
       setSelectedMonster(movedAttacker);
-      return true;
+    } else {
+      const damagedDefender: MonsterInstance = {
+        ...pendingDefender,
+        currentHp: nextHp,
+      };
+
+      setMonsters((currentMonsters) =>
+        currentMonsters.map((monster) =>
+          monster.instanceId === pendingDefender.instanceId
+            ? damagedDefender
+            : monster
+        )
+      );
+
+      setSelectedMonster(pendingAttacker);
     }
 
-    const damagedTarget: MonsterInstance = {
-      ...target,
-      currentHp: nextHp,
-    };
-
-    setMonsters((currentMonsters) =>
-      currentMonsters.map((monster) =>
-        monster.instanceId === target.instanceId ? damagedTarget : monster
-      )
-    );
-
-    setSelectedMonster(selectedMonster);
-    return true;
+    setAttackedMonsterIds((ids) => [...ids, pendingAttacker.instanceId]);
+    setPendingAttack(null);
   }
 
   function moveSelectedMonster(x: number, y: number) {
@@ -280,9 +332,9 @@ export function GameClient() {
   }
 
   function handleTileClick(x: number, y: number) {
-    const attacked = attackTarget(x, y);
+    const openedAttackPreview = openAttackPreview(x, y);
 
-    if (attacked) {
+    if (openedAttackPreview) {
       return;
     }
 
@@ -335,7 +387,7 @@ export function GameClient() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Monster Board Battle</h1>
         <p className="text-slate-400">
-          Module 7 — adjacent monster combat
+          Module 8 — attack preview modal and one attack per monster
         </p>
       </div>
 
@@ -375,6 +427,15 @@ export function GameClient() {
         selectedHandIndex={selectedHandIndex}
         onSelectCard={selectHandCard}
       />
+
+      {pendingAttacker && pendingDefender && (
+        <AttackPreviewModal
+          attacker={pendingAttacker}
+          defender={pendingDefender}
+          onConfirm={confirmAttack}
+          onCancel={() => setPendingAttack(null)}
+        />
+      )}
     </main>
   );
 }
