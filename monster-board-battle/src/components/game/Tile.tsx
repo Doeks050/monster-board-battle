@@ -1,11 +1,15 @@
 import { getPoiAt, isP1Base, isP2Base } from "@/lib/game/board";
+import { getMonsterCard } from "@/lib/game/monsters";
+import type { MonsterInstance } from "@/lib/game/types";
 
 type TileProps = {
   x: number;
   y: number;
+  monster?: MonsterInstance;
+  onSelectMonster: (monster: MonsterInstance) => void;
 };
 
-export function Tile({ x, y }: TileProps) {
+export function Tile({ x, y, monster, onSelectMonster }: TileProps) {
   const poi = getPoiAt(x, y);
 
   let content = "";
@@ -20,6 +24,26 @@ export function Tile({ x, y }: TileProps) {
   } else if (poi) {
     content = `⭐${poi.label}`;
     className = "border-yellow-500 bg-yellow-950 text-yellow-300";
+  }
+
+  if (monster) {
+    const card = getMonsterCard(monster.cardId);
+
+    const ownerClass =
+      monster.owner === "p1"
+        ? "border-blue-400 bg-blue-700 text-white hover:bg-blue-600"
+        : "border-red-400 bg-red-700 text-white hover:bg-red-600";
+
+    return (
+      <button
+        type="button"
+        title={`${card.name} | HP ${monster.currentHp}/${card.hp}`}
+        onClick={() => onSelectMonster(monster)}
+        className={`flex h-10 w-10 items-center justify-center rounded border text-lg font-bold ${ownerClass}`}
+      >
+        {card.icon}
+      </button>
+    );
   }
 
   return (
