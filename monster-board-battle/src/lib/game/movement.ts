@@ -6,7 +6,10 @@ export function getMovementDistance(
   toX: number,
   toY: number
 ) {
-  return Math.abs(fromX - toX) + Math.abs(fromY - toY);
+  const distanceX = Math.abs(fromX - toX);
+  const distanceY = Math.abs(fromY - toY);
+
+  return Math.max(distanceX, distanceY);
 }
 
 export function isInsideBoard(x: number, y: number) {
