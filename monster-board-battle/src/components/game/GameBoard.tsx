@@ -1,6 +1,7 @@
 import { BOARD_SIZE, P1_BASE, P2_BASE } from "@/lib/game/constants";
-import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
+import { getMonsterAt } from "@/lib/game/monsters";
 import { getMovementDistance } from "@/lib/game/movement";
+import { isAdjacent } from "@/lib/game/combat";
 import type { MonsterInstance, PlayerId } from "@/lib/game/types";
 import { Tile } from "./Tile";
 
@@ -9,7 +10,7 @@ type GameBoardProps = {
   monsters: MonsterInstance[];
   selectedMonster: MonsterInstance | null;
   diceRoll: number | null;
-  movementUsed: boolean;
+  movementPointsLeft: number | null;
   hasSelectedMonsterCard: boolean;
   onSelectMonster: (monster: MonsterInstance) => void;
   onTileClick: (x: number, y: number) => void;
@@ -20,7 +21,7 @@ export function GameBoard({
   monsters,
   selectedMonster,
   diceRoll,
-  movementUsed,
+  movementPointsLeft,
   hasSelectedMonsterCard,
   onSelectMonster,
   onTileClick,
@@ -37,7 +38,12 @@ export function GameBoard({
   }
 
   function isValidMoveTile(x: number, y: number) {
-    if (!selectedMonster || diceRoll === null || movementUsed) {
+    if (
+      !selectedMonster ||
+      diceRoll === null ||
+      movementPointsLeft === null ||
+      movementPointsLeft <= 0
+    ) {
       return false;
     }
 
@@ -51,8 +57,6 @@ export function GameBoard({
       return false;
     }
 
-    const card = getMonsterCard(selectedMonster.cardId);
-    const maxDistance = diceRoll + card.mov;
     const distance = getMovementDistance(
       selectedMonster.x,
       selectedMonster.y,
@@ -60,7 +64,25 @@ export function GameBoard({
       y
     );
 
-    return distance > 0 && distance <= maxDistance;
+    return distance > 0 && distance <= movementPointsLeft;
+  }
+
+  function isValidAttackTile(x: number, y: number) {
+    if (!selectedMonster) {
+      return false;
+    }
+
+    if (selectedMonster.owner !== currentPlayer) {
+      return false;
+    }
+
+    const target = getMonsterAt(monsters, x, y);
+
+    if (!target || target.owner === currentPlayer) {
+      return false;
+    }
+
+    return isAdjacent(selectedMonster.x, selectedMonster.y, x, y);
   }
 
   return (
@@ -79,6 +101,7 @@ export function GameBoard({
               monster={monster}
               isValidSpawn={isValidSpawnTile(x, y)}
               isValidMove={isValidMoveTile(x, y)}
+              isValidAttack={isValidAttackTile(x, y)}
               isSelectedMonster={
                 selectedMonster?.instanceId === monster?.instanceId
               }

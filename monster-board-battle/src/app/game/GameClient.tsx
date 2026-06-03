@@ -6,6 +6,7 @@ import { GameSidebar } from "@/components/game/GameSidebar";
 import { PlayerHand } from "@/components/game/PlayerHand";
 import { BASE_MAX_HP, P1_BASE, P2_BASE } from "@/lib/game/constants";
 import { createStarterDeck, drawCards } from "@/lib/game/cards";
+import { calculateDamage, isAdjacent } from "@/lib/game/combat";
 import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
 import { getMovementDistance } from "@/lib/game/movement";
 import type {
@@ -166,6 +167,66 @@ export function GameClient() {
     setMovementPointsLeft(roll);
   }
 
+  function attackTarget(x: number, y: number) {
+    if (!selectedMonster) {
+      return false;
+    }
+
+    if (selectedMonster.owner !== currentPlayer) {
+      return false;
+    }
+
+    const target = getMonsterAt(monsters, x, y);
+
+    if (!target || target.owner === currentPlayer) {
+      return false;
+    }
+
+    if (!isAdjacent(selectedMonster.x, selectedMonster.y, x, y)) {
+      return false;
+    }
+
+    const attackerCard = getMonsterCard(selectedMonster.cardId);
+    const defenderCard = getMonsterCard(target.cardId);
+    const damage = calculateDamage(attackerCard.atk, defenderCard.def);
+    const nextHp = target.currentHp - damage;
+
+    if (nextHp <= 0) {
+      const movedAttacker: MonsterInstance = {
+        ...selectedMonster,
+        x: target.x,
+        y: target.y,
+      };
+
+      setMonsters((currentMonsters) =>
+        currentMonsters
+          .filter((monster) => monster.instanceId !== target.instanceId)
+          .map((monster) =>
+            monster.instanceId === selectedMonster.instanceId
+              ? movedAttacker
+              : monster
+          )
+      );
+
+      setSelectedMonster(movedAttacker);
+      return true;
+    }
+
+    const damagedTarget: MonsterInstance = {
+      ...target,
+      currentHp: nextHp,
+    };
+
+    setMonsters((currentMonsters) =>
+      currentMonsters.map((monster) =>
+        monster.instanceId === target.instanceId ? damagedTarget : monster
+      )
+    );
+
+    setSelectedMonster(selectedMonster);
+    return true;
+  }
+
   function moveSelectedMonster(x: number, y: number) {
     if (!selectedMonster || diceRoll === null || movementPointsLeft === null) {
       return false;
@@ -219,6 +280,12 @@ export function GameClient() {
   }
 
   function handleTileClick(x: number, y: number) {
+    const attacked = attackTarget(x, y);
+
+    if (attacked) {
+      return;
+    }
+
     const moved = moveSelectedMonster(x, y);
 
     if (moved) {
@@ -268,7 +335,7 @@ export function GameClient() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Monster Board Battle</h1>
         <p className="text-slate-400">
-          Module 6 Fix — movement points are spent instead of fully consumed
+          Module 7 — adjacent monster combat
         </p>
       </div>
 
