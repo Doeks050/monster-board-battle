@@ -20,6 +20,23 @@ export type MonsterCard = {
   mov: number;
 };
 
+export type BoostCard = {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+};
+
+export type GameCard =
+  | {
+      type: "monster";
+      cardId: string;
+    }
+  | {
+      type: "boost";
+      cardId: string;
+    };
+
 export type MonsterInstance = {
   instanceId: string;
   cardId: string;
@@ -27,4 +44,11 @@ export type MonsterInstance = {
   x: number;
   y: number;
   currentHp: number;
+};
+
+export type PlayerState = {
+  id: PlayerId;
+  deck: GameCard[];
+  hand: GameCard[];
+  discard: GameCard[];
 };

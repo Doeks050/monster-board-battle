@@ -3,8 +3,12 @@
 import { useState } from "react";
 import { GameBoard } from "@/components/game/GameBoard";
 import { GameSidebar } from "@/components/game/GameSidebar";
+import { PlayerHand } from "@/components/game/PlayerHand";
 import { BASE_MAX_HP } from "@/lib/game/constants";
-import type { MonsterInstance, PlayerId } from "@/lib/game/types";
+import { createStarterDeck, drawCards } from "@/lib/game/cards";
+import type { MonsterInstance, PlayerId, PlayerState } from "@/lib/game/types";
+
+const HAND_LIMIT = 8;
 
 const INITIAL_MONSTERS: MonsterInstance[] = [
   {
@@ -41,6 +45,18 @@ const INITIAL_MONSTERS: MonsterInstance[] = [
   },
 ];
 
+function createInitialPlayerState(id: PlayerId): PlayerState {
+  const deck = createStarterDeck();
+  const drawn = drawCards(deck, [], 5);
+
+  return {
+    id,
+    deck: drawn.deck,
+    hand: drawn.hand,
+    discard: [],
+  };
+}
+
 export function GameClient() {
   const [currentPlayer, setCurrentPlayer] = useState<PlayerId>("p1");
   const [turnNumber, setTurnNumber] = useState(1);
@@ -48,11 +64,41 @@ export function GameClient() {
   const [selectedMonster, setSelectedMonster] =
     useState<MonsterInstance | null>(null);
 
+  const [p1State, setP1State] = useState<PlayerState>(() =>
+    createInitialPlayerState("p1")
+  );
+  const [p2State, setP2State] = useState<PlayerState>(() =>
+    createInitialPlayerState("p2")
+  );
+
   const [p1BaseHp] = useState(BASE_MAX_HP);
   const [p2BaseHp] = useState(BASE_MAX_HP);
 
+  const activePlayerState = currentPlayer === "p1" ? p1State : p2State;
+
+  function drawForPlayer(player: PlayerState): PlayerState {
+    if (player.hand.length >= HAND_LIMIT) {
+      return player;
+    }
+
+    const drawn = drawCards(player.deck, player.hand, 1);
+
+    return {
+      ...player,
+      deck: drawn.deck,
+      hand: drawn.hand,
+    };
+  }
+
   function endTurn() {
-    setCurrentPlayer((player) => (player === "p1" ? "p2" : "p1"));
+    if (currentPlayer === "p1") {
+      setCurrentPlayer("p2");
+      setP2State((player) => drawForPlayer(player));
+    } else {
+      setCurrentPlayer("p1");
+      setP1State((player) => drawForPlayer(player));
+    }
+
     setTurnNumber((turn) => turn + 1);
   }
 
@@ -61,7 +107,7 @@ export function GameClient() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Monster Board Battle</h1>
         <p className="text-slate-400">
-          Module 3 — monster pawns and card inspection
+          Module 4 — decks, hands and automatic draw
         </p>
       </div>
 
@@ -77,9 +123,19 @@ export function GameClient() {
           p1BaseHp={p1BaseHp}
           p2BaseHp={p2BaseHp}
           selectedMonster={selectedMonster}
+          p1DeckCount={p1State.deck.length}
+          p2DeckCount={p2State.deck.length}
           onEndTurn={endTurn}
         />
       </section>
+
+      <PlayerHand
+        currentPlayer={currentPlayer}
+        hand={activePlayerState.hand}
+        deckCount={activePlayerState.deck.length}
+        discardCount={activePlayerState.discard.length}
+        handLimit={HAND_LIMIT}
+      />
     </main>
   );
 }

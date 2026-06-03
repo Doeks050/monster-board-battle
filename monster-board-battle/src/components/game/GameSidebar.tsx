@@ -8,6 +8,8 @@ type GameSidebarProps = {
   p1BaseHp: number;
   p2BaseHp: number;
   selectedMonster: MonsterInstance | null;
+  p1DeckCount: number;
+  p2DeckCount: number;
   onEndTurn: () => void;
 };
 
@@ -17,6 +19,8 @@ export function GameSidebar({
   p1BaseHp,
   p2BaseHp,
   selectedMonster,
+  p1DeckCount,
+  p2DeckCount,
   onEndTurn,
 }: GameSidebarProps) {
   return (
@@ -38,6 +42,7 @@ export function GameSidebar({
             <p className="text-2xl font-bold">
               {p1BaseHp} / {BASE_MAX_HP} HP
             </p>
+            <p className="text-sm text-blue-200">Deck: {p1DeckCount}</p>
           </div>
 
           <div className="rounded-xl border border-red-900 bg-red-950 p-3">
@@ -45,6 +50,7 @@ export function GameSidebar({
             <p className="text-2xl font-bold">
               {p2BaseHp} / {BASE_MAX_HP} HP
             </p>
+            <p className="text-sm text-red-200">Deck: {p2DeckCount}</p>
           </div>
         </div>
 
@@ -52,7 +58,7 @@ export function GameSidebar({
           onClick={onEndTurn}
           className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-3 font-bold text-slate-950 hover:bg-emerald-400"
         >
-          End Turn
+          End Turn + Draw
         </button>
       </div>
 
