@@ -1,6 +1,7 @@
 import { BASE_MAX_HP } from "@/lib/game/constants";
 import type { MonsterInstance, PlayerId } from "@/lib/game/types";
 import { MonsterCardPreview } from "./MonsterCardPreview";
+import { PoiControlPanel } from "./PoiControlPanel";
 
 type GameSidebarProps = {
   currentPlayer: PlayerId;
@@ -8,6 +9,7 @@ type GameSidebarProps = {
   p1BaseHp: number;
   p2BaseHp: number;
   selectedMonster: MonsterInstance | null;
+  monsters: MonsterInstance[];
   p1DeckCount: number;
   p2DeckCount: number;
   diceRoll: number | null;
@@ -22,6 +24,7 @@ export function GameSidebar({
   p1BaseHp,
   p2BaseHp,
   selectedMonster,
+  monsters,
   p1DeckCount,
   p2DeckCount,
   diceRoll,
@@ -66,7 +69,8 @@ export function GameSidebar({
             {diceRoll === null ? "—" : `🎲 ${diceRoll}`}
           </p>
           <p className="text-sm text-slate-400">
-            Movement left: {movementPointsLeft === null ? "—" : movementPointsLeft}
+            Movement left:{" "}
+            {movementPointsLeft === null ? "—" : movementPointsLeft}
           </p>
 
           <button
@@ -86,7 +90,10 @@ export function GameSidebar({
         </button>
       </div>
 
-      <MonsterCardPreview monster={selectedMonster} />
+      <PoiControlPanel monsters={monsters} playerId="p1" />
+      <PoiControlPanel monsters={monsters} playerId="p2" />
+
+      <MonsterCardPreview monster={selectedMonster} monsters={monsters} />
     </aside>
   );
 }

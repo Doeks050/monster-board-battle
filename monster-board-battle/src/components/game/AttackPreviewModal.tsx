@@ -1,10 +1,12 @@
 import { calculateDamage } from "@/lib/game/combat";
 import { getMonsterCard } from "@/lib/game/monsters";
+import { getEffectiveMonsterStats } from "@/lib/game/stats";
 import type { MonsterInstance } from "@/lib/game/types";
 
 type AttackPreviewModalProps = {
   attacker: MonsterInstance;
   defender: MonsterInstance;
+  monsters: MonsterInstance[];
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -12,13 +14,17 @@ type AttackPreviewModalProps = {
 export function AttackPreviewModal({
   attacker,
   defender,
+  monsters,
   onConfirm,
   onCancel,
 }: AttackPreviewModalProps) {
   const attackerCard = getMonsterCard(attacker.cardId);
   const defenderCard = getMonsterCard(defender.cardId);
 
-  const damage = calculateDamage(attackerCard.atk, defenderCard.def);
+  const attackerStats = getEffectiveMonsterStats(attacker, monsters);
+  const defenderStats = getEffectiveMonsterStats(defender, monsters);
+
+  const damage = calculateDamage(attackerStats.atk, defenderStats.def);
   const hpAfterAttack = Math.max(0, defender.currentHp - damage);
   const willDefeat = hpAfterAttack <= 0;
 
@@ -48,23 +54,47 @@ export function AttackPreviewModal({
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
               <p className="text-sm text-slate-400">❤ HP</p>
               <p className="text-2xl font-bold">
-                {defender.currentHp} / {defenderCard.hp}
+                {defender.currentHp} / {defenderStats.hp}
               </p>
             </div>
 
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
               <p className="text-sm text-slate-400">⚔ ATK</p>
-              <p className="text-2xl font-bold">{defenderCard.atk}</p>
+              <p className="text-2xl font-bold">
+                {defenderStats.atk}
+                {defenderStats.atkBonus > 0 && (
+                  <span className="text-sm text-emerald-300">
+                    {" "}
+                    (+{defenderStats.atkBonus})
+                  </span>
+                )}
+              </p>
             </div>
 
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
               <p className="text-sm text-slate-400">🛡 DEF</p>
-              <p className="text-2xl font-bold">{defenderCard.def}</p>
+              <p className="text-2xl font-bold">
+                {defenderStats.def}
+                {defenderStats.defBonus > 0 && (
+                  <span className="text-sm text-emerald-300">
+                    {" "}
+                    (+{defenderStats.defBonus})
+                  </span>
+                )}
+              </p>
             </div>
 
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
               <p className="text-sm text-slate-400">👣 MOV</p>
-              <p className="text-2xl font-bold">+{defenderCard.mov}</p>
+              <p className="text-2xl font-bold">
+                +{defenderStats.mov}
+                {defenderStats.movBonus > 0 && (
+                  <span className="text-sm text-emerald-300">
+                    {" "}
+                    (+{defenderStats.movBonus})
+                  </span>
+                )}
+              </p>
             </div>
           </div>
         </div>
@@ -81,6 +111,16 @@ export function AttackPreviewModal({
             </p>
 
             <p>
+              Attacker ATK:{" "}
+              <span className="font-bold">{attackerStats.atk}</span>
+            </p>
+
+            <p>
+              Defender DEF:{" "}
+              <span className="font-bold">{defenderStats.def}</span>
+            </p>
+
+            <p>
               Damage:{" "}
               <span className="font-bold text-red-300">{damage}</span>
             </p>
@@ -88,7 +128,7 @@ export function AttackPreviewModal({
             <p>
               Enemy HP after attack:{" "}
               <span className="font-bold">
-                {hpAfterAttack} / {defenderCard.hp}
+                {hpAfterAttack} / {defenderStats.hp}
               </span>
             </p>
 

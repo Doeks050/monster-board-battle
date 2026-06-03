@@ -10,6 +10,7 @@ import { createStarterDeck, drawCards } from "@/lib/game/cards";
 import { calculateDamage, isAdjacent } from "@/lib/game/combat";
 import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
 import { getMovementDistance } from "@/lib/game/movement";
+import { getEffectiveMonsterStats, getPlayerMovementBonus } from "@/lib/game/stats";
 import type {
   GameCard,
   MonsterInstance,
@@ -188,9 +189,11 @@ export function GameClient() {
     }
 
     const roll = rollD6();
+    const movementBonus = getPlayerMovementBonus(currentPlayer, monsters);
+    const totalMovement = roll + movementBonus;
 
     setDiceRoll(roll);
-    setMovementPointsLeft(roll);
+    setMovementPointsLeft(totalMovement);
   }
 
   function openAttackPreview(x: number, y: number) {
@@ -235,9 +238,9 @@ export function GameClient() {
       return;
     }
 
-    const attackerCard = getMonsterCard(pendingAttacker.cardId);
-    const defenderCard = getMonsterCard(pendingDefender.cardId);
-    const damage = calculateDamage(attackerCard.atk, defenderCard.def);
+    const attackerStats = getEffectiveMonsterStats(pendingAttacker, monsters);
+    const defenderStats = getEffectiveMonsterStats(pendingDefender, monsters);
+    const damage = calculateDamage(attackerStats.atk, defenderStats.def);
     const nextHp = pendingDefender.currentHp - damage;
 
     if (nextHp <= 0) {
@@ -432,6 +435,7 @@ export function GameClient() {
         <AttackPreviewModal
           attacker={pendingAttacker}
           defender={pendingDefender}
+          monsters={monsters}
           onConfirm={confirmAttack}
           onCancel={() => setPendingAttack(null)}
         />
