@@ -412,6 +412,7 @@ export function GameClient() {
           p1BaseHp={p1BaseHp}
           p2BaseHp={p2BaseHp}
           selectedMonster={selectedMonster}
+          monsters={monsters}
           p1DeckCount={p1State.deck.length}
           p2DeckCount={p2State.deck.length}
           diceRoll={diceRoll}

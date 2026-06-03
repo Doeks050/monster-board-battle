@@ -2,7 +2,7 @@ import { POIS } from "./constants";
 import type { MonsterInstance, PlayerId, PoiControl } from "./types";
 
 export function getPoiControl(
-  monsters: MonsterInstance[],
+  monsters: MonsterInstance[] = [],
   playerId: PlayerId
 ): PoiControl[] {
   return POIS.map((poi) => {
@@ -18,7 +18,7 @@ export function getPoiControl(
 }
 
 export function getPoiOwner(
-  monsters: MonsterInstance[],
+  monsters: MonsterInstance[] = [],
   x: number,
   y: number
 ): PlayerId | null {
