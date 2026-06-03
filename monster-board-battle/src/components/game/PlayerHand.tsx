@@ -7,6 +7,8 @@ type PlayerHandProps = {
   deckCount: number;
   discardCount: number;
   handLimit: number;
+  selectedHandIndex: number | null;
+  onSelectCard: (index: number) => void;
 };
 
 export function PlayerHand({
@@ -15,6 +17,8 @@ export function PlayerHand({
   deckCount,
   discardCount,
   handLimit,
+  selectedHandIndex,
+  onSelectCard,
 }: PlayerHandProps) {
   return (
     <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
@@ -28,11 +32,20 @@ export function PlayerHand({
             {discardCount}
           </p>
         </div>
+
+        <p className="text-sm text-slate-400">
+          Select a monster card, then click your base to spawn it.
+        </p>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2">
         {hand.map((card, index) => (
-          <HandCard key={`${card.type}-${card.cardId}-${index}`} card={card} />
+          <HandCard
+            key={`${card.type}-${card.cardId}-${index}`}
+            card={card}
+            isSelected={selectedHandIndex === index}
+            onClick={() => onSelectCard(index)}
+          />
         ))}
       </div>
     </section>

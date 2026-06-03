@@ -4,9 +4,11 @@ import { useState } from "react";
 import { GameBoard } from "@/components/game/GameBoard";
 import { GameSidebar } from "@/components/game/GameSidebar";
 import { PlayerHand } from "@/components/game/PlayerHand";
-import { BASE_MAX_HP } from "@/lib/game/constants";
+import { BASE_MAX_HP, P1_BASE, P2_BASE } from "@/lib/game/constants";
 import { createStarterDeck, drawCards } from "@/lib/game/cards";
-import type { MonsterInstance, PlayerId, PlayerState } from "@/lib/game/types";
+import { getMonsterAt } from "@/lib/game/monsters";
+import { getMonsterCard } from "@/lib/game/monsters";
+import type { GameCard, MonsterInstance, PlayerId, PlayerState } from "@/lib/game/types";
 
 const HAND_LIMIT = 8;
 
@@ -57,12 +59,20 @@ function createInitialPlayerState(id: PlayerId): PlayerState {
   };
 }
 
+function removeCardFromHand(hand: GameCard[], index: number) {
+  return hand.filter((_, cardIndex) => cardIndex !== index);
+}
+
 export function GameClient() {
   const [currentPlayer, setCurrentPlayer] = useState<PlayerId>("p1");
   const [turnNumber, setTurnNumber] = useState(1);
-  const [monsters] = useState<MonsterInstance[]>(INITIAL_MONSTERS);
+  const [monsters, setMonsters] =
+    useState<MonsterInstance[]>(INITIAL_MONSTERS);
   const [selectedMonster, setSelectedMonster] =
     useState<MonsterInstance | null>(null);
+  const [selectedHandIndex, setSelectedHandIndex] = useState<number | null>(
+    null
+  );
 
   const [p1State, setP1State] = useState<PlayerState>(() =>
     createInitialPlayerState("p1")
@@ -75,6 +85,18 @@ export function GameClient() {
   const [p2BaseHp] = useState(BASE_MAX_HP);
 
   const activePlayerState = currentPlayer === "p1" ? p1State : p2State;
+  const selectedCard =
+    selectedHandIndex === null ? null : activePlayerState.hand[selectedHandIndex];
+
+  const hasSelectedMonsterCard = selectedCard?.type === "monster";
+
+  function setActivePlayerState(nextState: PlayerState) {
+    if (currentPlayer === "p1") {
+      setP1State(nextState);
+    } else {
+      setP2State(nextState);
+    }
+  }
 
   function drawForPlayer(player: PlayerState): PlayerState {
     if (player.hand.length >= HAND_LIMIT) {
@@ -91,6 +113,8 @@ export function GameClient() {
   }
 
   function endTurn() {
+    setSelectedHandIndex(null);
+
     if (currentPlayer === "p1") {
       setCurrentPlayer("p2");
       setP2State((player) => drawForPlayer(player));
@@ -102,19 +126,67 @@ export function GameClient() {
     setTurnNumber((turn) => turn + 1);
   }
 
+  function selectHandCard(index: number) {
+    setSelectedHandIndex((currentIndex) =>
+      currentIndex === index ? null : index
+    );
+  }
+
+  function handleTileClick(x: number, y: number) {
+    if (!selectedCard || selectedHandIndex === null) {
+      return;
+    }
+
+    if (selectedCard.type !== "monster") {
+      return;
+    }
+
+    const base = currentPlayer === "p1" ? P1_BASE : P2_BASE;
+    const isOwnBase = base.x === x && base.y === y;
+    const occupied = getMonsterAt(monsters, x, y);
+
+    if (!isOwnBase || occupied) {
+      return;
+    }
+
+    const card = getMonsterCard(selectedCard.cardId);
+
+    const newMonster: MonsterInstance = {
+      instanceId: `${currentPlayer}-${selectedCard.cardId}-${Date.now()}`,
+      cardId: selectedCard.cardId,
+      owner: currentPlayer,
+      x,
+      y,
+      currentHp: card.hp,
+    };
+
+    setMonsters((currentMonsters) => [...currentMonsters, newMonster]);
+
+    setActivePlayerState({
+      ...activePlayerState,
+      hand: removeCardFromHand(activePlayerState.hand, selectedHandIndex),
+    });
+
+    setSelectedHandIndex(null);
+    setSelectedMonster(newMonster);
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-white">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Monster Board Battle</h1>
         <p className="text-slate-400">
-          Module 4 — decks, hands and automatic draw
+          Module 5 — play monster cards from hand onto your base
         </p>
       </div>
 
       <section className="flex flex-col gap-6 xl:flex-row">
         <GameBoard
+          currentPlayer={currentPlayer}
           monsters={monsters}
+          hasSelectedMonsterCard={hasSelectedMonsterCard}
           onSelectMonster={setSelectedMonster}
+          onTileClick={handleTileClick}
         />
 
         <GameSidebar
@@ -135,6 +207,8 @@ export function GameClient() {
         deckCount={activePlayerState.deck.length}
         discardCount={activePlayerState.discard.length}
         handLimit={HAND_LIMIT}
+        selectedHandIndex={selectedHandIndex}
+        onSelectCard={selectHandCard}
       />
     </main>
   );

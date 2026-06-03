@@ -6,10 +6,19 @@ type TileProps = {
   x: number;
   y: number;
   monster?: MonsterInstance;
+  isValidSpawn: boolean;
   onSelectMonster: (monster: MonsterInstance) => void;
+  onTileClick: (x: number, y: number) => void;
 };
 
-export function Tile({ x, y, monster, onSelectMonster }: TileProps) {
+export function Tile({
+  x,
+  y,
+  monster,
+  isValidSpawn,
+  onSelectMonster,
+  onTileClick,
+}: TileProps) {
   const poi = getPoiAt(x, y);
 
   let content = "";
@@ -24,6 +33,10 @@ export function Tile({ x, y, monster, onSelectMonster }: TileProps) {
   } else if (poi) {
     content = `⭐${poi.label}`;
     className = "border-yellow-500 bg-yellow-950 text-yellow-300";
+  }
+
+  if (isValidSpawn) {
+    className = `${className} ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950`;
   }
 
   if (monster) {
@@ -47,11 +60,13 @@ export function Tile({ x, y, monster, onSelectMonster }: TileProps) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       title={`Tile ${x}, ${y}`}
+      onClick={() => onTileClick(x, y)}
       className={`flex h-10 w-10 items-center justify-center rounded border text-xs font-bold ${className}`}
     >
       {content}
-    </div>
+    </button>
   );
 }
