@@ -9,7 +9,7 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 8,
     atk: 4,
     def: 2,
-    mov: 3,
+    mov: 1,
   },
   {
     id: "stone-golem",
@@ -19,7 +19,7 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 14,
     atk: 4,
     def: 6,
-    mov: 1,
+    mov: 0,
   },
   {
     id: "storm-eagle",
@@ -29,7 +29,7 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 6,
     atk: 5,
     def: 1,
-    mov: 4,
+    mov: 2,
   },
   {
     id: "fire-drake",
@@ -39,7 +39,7 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 12,
     atk: 7,
     def: 3,
-    mov: 2,
+    mov: 1,
   },
   {
     id: "ancient-treant",
@@ -49,7 +49,7 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 18,
     atk: 5,
     def: 7,
-    mov: 1,
+    mov: 0,
   },
   {
     id: "crystal-serpent",
@@ -59,6 +59,6 @@ export const MONSTER_CARDS: MonsterCard[] = [
     hp: 10,
     atk: 6,
     def: 4,
-    mov: 3,
+    mov: 1,
   },
 ];
