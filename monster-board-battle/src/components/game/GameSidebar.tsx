@@ -10,6 +10,9 @@ type GameSidebarProps = {
   selectedMonster: MonsterInstance | null;
   p1DeckCount: number;
   p2DeckCount: number;
+  diceRoll: number | null;
+  movementPointsLeft: number | null;
+  onRollDice: () => void;
   onEndTurn: () => void;
 };
 
@@ -21,6 +24,9 @@ export function GameSidebar({
   selectedMonster,
   p1DeckCount,
   p2DeckCount,
+  diceRoll,
+  movementPointsLeft,
+  onRollDice,
   onEndTurn,
 }: GameSidebarProps) {
   return (
@@ -54,9 +60,27 @@ export function GameSidebar({
           </div>
         </div>
 
+        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-3">
+          <p className="text-sm text-slate-400">Dice Roll</p>
+          <p className="text-3xl font-bold">
+            {diceRoll === null ? "—" : `🎲 ${diceRoll}`}
+          </p>
+          <p className="text-sm text-slate-400">
+            Movement left: {movementPointsLeft === null ? "—" : movementPointsLeft}
+          </p>
+
+          <button
+            onClick={onRollDice}
+            disabled={diceRoll !== null}
+            className="mt-3 w-full rounded-xl bg-cyan-500 px-4 py-3 font-bold text-slate-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          >
+            Roll Dice
+          </button>
+        </div>
+
         <button
           onClick={onEndTurn}
-          className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-3 font-bold text-slate-950 hover:bg-emerald-400"
+          className="mt-4 w-full rounded-xl bg-emerald-500 px-4 py-3 font-bold text-slate-950 hover:bg-emerald-400"
         >
           End Turn + Draw
         </button>

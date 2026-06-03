@@ -6,9 +6,14 @@ import { GameSidebar } from "@/components/game/GameSidebar";
 import { PlayerHand } from "@/components/game/PlayerHand";
 import { BASE_MAX_HP, P1_BASE, P2_BASE } from "@/lib/game/constants";
 import { createStarterDeck, drawCards } from "@/lib/game/cards";
-import { getMonsterAt } from "@/lib/game/monsters";
-import { getMonsterCard } from "@/lib/game/monsters";
-import type { GameCard, MonsterInstance, PlayerId, PlayerState } from "@/lib/game/types";
+import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
+import { getMovementDistance } from "@/lib/game/movement";
+import type {
+  GameCard,
+  MonsterInstance,
+  PlayerId,
+  PlayerState,
+} from "@/lib/game/types";
 
 const HAND_LIMIT = 8;
 
@@ -63,6 +68,10 @@ function removeCardFromHand(hand: GameCard[], index: number) {
   return hand.filter((_, cardIndex) => cardIndex !== index);
 }
 
+function rollD6() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
 export function GameClient() {
   const [currentPlayer, setCurrentPlayer] = useState<PlayerId>("p1");
   const [turnNumber, setTurnNumber] = useState(1);
@@ -71,6 +80,11 @@ export function GameClient() {
   const [selectedMonster, setSelectedMonster] =
     useState<MonsterInstance | null>(null);
   const [selectedHandIndex, setSelectedHandIndex] = useState<number | null>(
+    null
+  );
+
+  const [diceRoll, setDiceRoll] = useState<number | null>(null);
+  const [movementPointsLeft, setMovementPointsLeft] = useState<number | null>(
     null
   );
 
@@ -114,6 +128,9 @@ export function GameClient() {
 
   function endTurn() {
     setSelectedHandIndex(null);
+    setSelectedMonster(null);
+    setDiceRoll(null);
+    setMovementPointsLeft(null);
 
     if (currentPlayer === "p1") {
       setCurrentPlayer("p2");
@@ -130,9 +147,84 @@ export function GameClient() {
     setSelectedHandIndex((currentIndex) =>
       currentIndex === index ? null : index
     );
+    setSelectedMonster(null);
+  }
+
+  function selectMonster(monster: MonsterInstance) {
+    setSelectedMonster(monster);
+    setSelectedHandIndex(null);
+  }
+
+  function rollDice() {
+    if (diceRoll !== null) {
+      return;
+    }
+
+    const roll = rollD6();
+
+    setDiceRoll(roll);
+    setMovementPointsLeft(roll);
+  }
+
+  function moveSelectedMonster(x: number, y: number) {
+    if (!selectedMonster || diceRoll === null || movementPointsLeft === null) {
+      return false;
+    }
+
+    if (movementPointsLeft <= 0) {
+      return false;
+    }
+
+    if (selectedMonster.owner !== currentPlayer) {
+      return false;
+    }
+
+    const occupied = getMonsterAt(monsters, x, y);
+
+    if (occupied) {
+      return false;
+    }
+
+    const distance = getMovementDistance(
+      selectedMonster.x,
+      selectedMonster.y,
+      x,
+      y
+    );
+
+    if (distance <= 0 || distance > movementPointsLeft) {
+      return false;
+    }
+
+    const movedMonster: MonsterInstance = {
+      ...selectedMonster,
+      x,
+      y,
+    };
+
+    setMonsters((currentMonsters) =>
+      currentMonsters.map((monster) =>
+        monster.instanceId === selectedMonster.instanceId
+          ? movedMonster
+          : monster
+      )
+    );
+
+    setSelectedMonster(movedMonster);
+    setMovementPointsLeft((points) =>
+      points === null ? null : Math.max(0, points - distance)
+    );
+
+    return true;
   }
 
   function handleTileClick(x: number, y: number) {
+    const moved = moveSelectedMonster(x, y);
+
+    if (moved) {
+      return;
+    }
+
     if (!selectedCard || selectedHandIndex === null) {
       return;
     }
@@ -176,7 +268,7 @@ export function GameClient() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Monster Board Battle</h1>
         <p className="text-slate-400">
-          Module 5 — play monster cards from hand onto your base
+          Module 6 Fix — movement points are spent instead of fully consumed
         </p>
       </div>
 
@@ -184,8 +276,11 @@ export function GameClient() {
         <GameBoard
           currentPlayer={currentPlayer}
           monsters={monsters}
+          selectedMonster={selectedMonster}
+          diceRoll={diceRoll}
+          movementPointsLeft={movementPointsLeft}
           hasSelectedMonsterCard={hasSelectedMonsterCard}
-          onSelectMonster={setSelectedMonster}
+          onSelectMonster={selectMonster}
           onTileClick={handleTileClick}
         />
 
@@ -197,6 +292,9 @@ export function GameClient() {
           selectedMonster={selectedMonster}
           p1DeckCount={p1State.deck.length}
           p2DeckCount={p2State.deck.length}
+          diceRoll={diceRoll}
+          movementPointsLeft={movementPointsLeft}
+          onRollDice={rollDice}
           onEndTurn={endTurn}
         />
       </section>

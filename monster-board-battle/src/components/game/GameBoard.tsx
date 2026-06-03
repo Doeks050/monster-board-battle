@@ -1,11 +1,15 @@
 import { BOARD_SIZE, P1_BASE, P2_BASE } from "@/lib/game/constants";
-import { getMonsterAt } from "@/lib/game/monsters";
+import { getMonsterAt, getMonsterCard } from "@/lib/game/monsters";
+import { getMovementDistance } from "@/lib/game/movement";
 import type { MonsterInstance, PlayerId } from "@/lib/game/types";
 import { Tile } from "./Tile";
 
 type GameBoardProps = {
   currentPlayer: PlayerId;
   monsters: MonsterInstance[];
+  selectedMonster: MonsterInstance | null;
+  diceRoll: number | null;
+  movementUsed: boolean;
   hasSelectedMonsterCard: boolean;
   onSelectMonster: (monster: MonsterInstance) => void;
   onTileClick: (x: number, y: number) => void;
@@ -14,6 +18,9 @@ type GameBoardProps = {
 export function GameBoard({
   currentPlayer,
   monsters,
+  selectedMonster,
+  diceRoll,
+  movementUsed,
   hasSelectedMonsterCard,
   onSelectMonster,
   onTileClick,
@@ -27,6 +34,33 @@ export function GameBoard({
     const monsterAtTile = getMonsterAt(monsters, x, y);
 
     return base.x === x && base.y === y && !monsterAtTile;
+  }
+
+  function isValidMoveTile(x: number, y: number) {
+    if (!selectedMonster || diceRoll === null || movementUsed) {
+      return false;
+    }
+
+    if (selectedMonster.owner !== currentPlayer) {
+      return false;
+    }
+
+    const occupied = getMonsterAt(monsters, x, y);
+
+    if (occupied) {
+      return false;
+    }
+
+    const card = getMonsterCard(selectedMonster.cardId);
+    const maxDistance = diceRoll + card.mov;
+    const distance = getMovementDistance(
+      selectedMonster.x,
+      selectedMonster.y,
+      x,
+      y
+    );
+
+    return distance > 0 && distance <= maxDistance;
   }
 
   return (
@@ -44,6 +78,10 @@ export function GameBoard({
               y={y}
               monster={monster}
               isValidSpawn={isValidSpawnTile(x, y)}
+              isValidMove={isValidMoveTile(x, y)}
+              isSelectedMonster={
+                selectedMonster?.instanceId === monster?.instanceId
+              }
               onSelectMonster={onSelectMonster}
               onTileClick={onTileClick}
             />

@@ -7,6 +7,8 @@ type TileProps = {
   y: number;
   monster?: MonsterInstance;
   isValidSpawn: boolean;
+  isValidMove: boolean;
+  isSelectedMonster: boolean;
   onSelectMonster: (monster: MonsterInstance) => void;
   onTileClick: (x: number, y: number) => void;
 };
@@ -16,6 +18,8 @@ export function Tile({
   y,
   monster,
   isValidSpawn,
+  isValidMove,
+  isSelectedMonster,
   onSelectMonster,
   onTileClick,
 }: TileProps) {
@@ -39,13 +43,21 @@ export function Tile({
     className = `${className} ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950`;
   }
 
+  if (isValidMove) {
+    className = `${className} ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950`;
+  }
+
   if (monster) {
     const card = getMonsterCard(monster.cardId);
 
-    const ownerClass =
+    let ownerClass =
       monster.owner === "p1"
         ? "border-blue-400 bg-blue-700 text-white hover:bg-blue-600"
         : "border-red-400 bg-red-700 text-white hover:bg-red-600";
+
+    if (isSelectedMonster) {
+      ownerClass = `${ownerClass} ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950`;
+    }
 
     return (
       <button
